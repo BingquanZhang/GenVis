@@ -1,0 +1,43 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GenVis - Chr9 Top 10% Viewer</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1a1a1a; }
+        #wrapper { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        img { 
+            cursor: grab; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            height: 90vh; 
+            width: auto;
+        }
+        img:active { cursor: grabbing; }
+        #info { position: absolute; top: 10px; left: 10px; color: #aaa; font-family: sans-serif; pointer-events: none; background: rgba(0,0,0,0.4); padding: 5px 10px; border-radius: 4px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom/dist/panzoom.min.js"></script>
+</head>
+<body>
+    <div id="info">Scroll wheel zoom | Mouse drag to move</div>
+    <div id="wrapper">
+        <img id="zoom-img" src="chr9_50pct.jpg">
+    </div>
+    <script>
+        const elem = document.getElementById("zoom-img");
+        const panzoom = Panzoom(elem, {
+            maxScale: 50,
+            minScale: 0.1,
+            canvas: true,
+            step: 0.2
+        });
+        
+        const parent = elem.parentElement;
+        parent.addEventListener("wheel", function(event) {
+            event.preventDefault();
+            panzoom.zoomWithWheel(event);
+        }, { passive: false });
+    </script>
+</body>
+</html>
+
