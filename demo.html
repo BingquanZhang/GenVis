@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genomic Data Sonification — Interactive Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: #f5f7fa;
+    color: #1a1a2e;
+    min-height: 100vh;
+    padding: 28px 24px;
+  }
+
+  header {
+    max-width: 1100px;
+    margin: 0 auto 22px;
+    border-bottom: 2px solid #d0d7de;
+    padding-bottom: 14px;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: bold;
+    color: #1a1a2e;
+    letter-spacing: 0.01em;
+  }
+
+  .main {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2.4fr 320px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .plot-panel {
+    background: #ffffff;
+    border: 1.5px solid #d0d7de;
+    border-radius: 10px;
+    padding: 12px 12px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  }
+
+  .panel-label { display: none; }
+
+  canvas {
+    display: block;
+    width: 100%;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    cursor: grab;
+    background: #ffffff;
+  }
+
+  canvas.grabbing { cursor: grabbing; }
+
+  .dims-note {
+    margin-top: 10px;
+    padding: 10px 16px;
+    background: #fff8f0;
+    border: 1.5px solid #f0883e;
+    border-radius: 6px;
+    font-size: 19px;
+    color: #c05a00;
+    font-family: 'Georgia', serif;
+    line-height: 1.6;
+    font-weight: bold;
+  }
+
+  .var-panel {
+    background: #ffffff;
+    border: 1.5px solid #d0d7de;
+    border-radius: 10px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  }
+
+  .var-panel-title {
+    font-size: 19px;
+    font-weight: bold;
+    color: #444;
+    font-family: 'Georgia', serif;
+    margin-bottom: 2px;
+  }
+
+  .var-card {
+    border: 1.5px solid #d0d7de;
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    background: #f8fafc;
+  }
+
+  .var-card:hover { border-color: #0969da; background: #f0f6ff; }
+  .var-card.active { border-color: #0969da; background: #dbeafe; }
+
+  .var-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .var-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1a1a2e;
+    font-family: 'Georgia', serif;
+  }
+
+  .var-type {
+    font-size: 15px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: 'Georgia', serif;
+    font-weight: bold;
+  }
+
+  .var-type.continuous { background: #dbeafe; color: #1d4ed8; }
+  .var-type.categorical { background: #fef3c7; color: #92400e; }
+
+  .var-params {
+    margin-top: 9px;
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .var-card.active .var-params { display: grid; }
+
+  .param-chip {
+    font-size: 15px;
+    font-family: 'Georgia', serif;
+    color: #555;
+    padding: 2px 0;
+    line-height: 1.5;
+  }
+
+  .param-chip span { color: #1d4ed8; font-weight: bold; }
+
+  .sound-icon { width: 26px; height: 26px; display: flex; align-items: center; flex-shrink: 0; }
+  .sound-icon svg { width: 22px; height: 22px; fill: #aaa; transition: fill 0.15s; }
+  .var-card.active .sound-icon svg { fill: #0969da; }
+
+  .interpretation-box {
+    background: #f8fafc;
+    border: 1.5px solid #d0d7de;
+    border-radius: 8px;
+    padding: 14px 16px;
+    min-height: 90px;
+  }
+
+  .interp-label {
+    font-family: 'Georgia', serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 7px;
+  }
+
+  .interp-text {
+    font-size: 16px;
+    color: #888;
+    line-height: 1.75;
+    font-family: 'Georgia', serif;
+  }
+
+  .interp-text.has-content { color: #1a1a2e; }
+
+  .legend {
+    max-width: 1200px;
+    margin: 16px auto 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .legend-item {
+    background: #ffffff;
+    border: 1.5px solid #d0d7de;
+    border-radius: 8px;
+    padding: 15px 17px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+
+  .legend-param {
+    font-family: 'Georgia', serif;
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    color: #c05a00;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .legend-meaning {
+    font-size: 19px;
+    font-weight: bold;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+    font-family: 'Georgia', serif;
+  }
+
+  .legend-detail {
+    font-size: 15px;
+    color: #666;
+    font-family: 'Georgia', serif;
+    line-height: 1.55;
+  }
+
+  .playing-indicator {
+    display: inline-block;
+    width: 9px; height: 9px;
+    background: #0969da;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 0.6s ease-in-out infinite alternate;
+    vertical-align: middle;
+  }
+
+  @keyframes pulse {
+    from { opacity: 0.4; transform: scale(0.8); }
+    to   { opacity: 1;   transform: scale(1.2); }
+  }
+
+  .bottom-hint {
+    font-size: 16px;
+    color: #888;
+    font-family: 'Georgia', serif;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Genomic Data Sonification — Interactive Demo</h1>
+</header>
+
+<div class="main">
+  <div class="plot-panel">
+    <div class="panel-label">3D Scatter Plot — Gene A · Gene B · Gene C expression</div>
+    <canvas id="c3d" width="1100" height="780"></canvas>
+    <div class="dims-note">
+      ▶ 3 dimensions left behind — hover over any point to hear what was left behind
+    </div>
+  </div>
+
+  <div class="var-panel">
+    <div class="var-panel-title">Variables at selected point</div>
+
+    <div class="var-card" id="card-age" onclick="playVar('age')">
+      <div class="var-card-top">
+        <span class="var-name">Patient Age</span>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <span class="var-type continuous">continuous</span>
+          <div class="sound-icon"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></div>
+        </div>
+      </div>
+      <div class="var-params">
+        <div class="param-chip">pitch <span id="p-age-pitch">—</span></div>
+        <div class="param-chip">timbre <span>flute (sine)</span></div>
+        <div class="param-chip">intensity <span id="p-age-gain">—</span></div>
+        <div class="param-chip">duration <span id="p-age-dur">—</span></div>
+      </div>
+    </div>
+
+    <div class="var-card" id="card-smoking" onclick="playVar('smoking')">
+      <div class="var-card-top">
+        <span class="var-name">Smoking History</span>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <span class="var-type categorical">categorical</span>
+          <div class="sound-icon"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/></svg></div>
+        </div>
+      </div>
+      <div class="var-params">
+        <div class="param-chip">pitch <span id="p-smoking-pitch">—</span></div>
+        <div class="param-chip">timbre <span>violin (saw)</span></div>
+        <div class="param-chip">intensity <span id="p-smoking-gain">—</span></div>
+        <div class="param-chip">duration <span id="p-smoking-dur">—</span></div>
+      </div>
+    </div>
+
+    <div class="var-card" id="card-tumor" onclick="playVar('tumor')">
+      <div class="var-card-top">
+        <span class="var-name">Tumor Size</span>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <span class="var-type continuous">continuous</span>
+          <div class="sound-icon"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></div>
+        </div>
+      </div>
+      <div class="var-params">
+        <div class="param-chip">pitch <span id="p-tumor-pitch">—</span></div>
+        <div class="param-chip">timbre <span>flute (sine)</span></div>
+        <div class="param-chip">intensity <span id="p-tumor-gain">—</span></div>
+        <div class="param-chip">duration <span id="p-tumor-dur">—</span></div>
+      </div>
+    </div>
+
+    <div class="interpretation-box">
+      <div class="interp-label">Interpretation</div>
+      <div class="interp-text" id="interp-text">Move the mouse over any data point in the 3D plot to hear its acoustic signature.</div>
+    </div>
+
+    <div class="bottom-hint" id="bottom-hint">hover over any point to hear it</div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-param">Pitch</div>
+    <div class="legend-meaning">p-value</div>
+    <div class="legend-detail">low p-value<br>→ high pitch</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-param">Timbre</div>
+    <div class="legend-meaning">variable type</div>
+    <div class="legend-detail">continuous → flute<br>categorical → violin</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-param">Intensity</div>
+    <div class="legend-meaning">effect size</div>
+    <div class="legend-detail">large effect<br>→ louder sound</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-param">Duration</div>
+    <div class="legend-meaning">prevalence</div>
+    <div class="legend-detail">common → long note<br>rare → short click</div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c3d');
+const ctx = canvas.getContext('2d');
+const CW = 1100, CH = 780;
+const CX = CW / 2, CY = CH / 2 + 10;
+const SCALE = 530;
+
+let rotX = 0.38, rotY = -0.58;
+let dragging = false, lastMX = 0, lastMY = 0;
+let selectedIdx = null, currentPoint = null;
+
+// ── data ──────────────────────────────────────────────────────────────────────
+function rnd(mu, s) {
+  let u=0,v=0;
+  while(!u) u=Math.random();
+  while(!v) v=Math.random();
+  return mu + s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+const points = [];
+
+// cluster A — high Gene A, low Gene B, mid Gene C  (smoking dominant)
+for (let i=0;i<240;i++) {
+  points.push({
+    x: Math.min(.97,Math.max(.03,rnd(.72,.09))),
+    y: Math.min(.97,Math.max(.03,rnd(.26,.08))),
+    z: Math.min(.97,Math.max(.03,rnd(.52,.09))),
+    smokeSig: 0.00005+Math.random()*0.006,
+    smokeOR:  2.8+Math.random()*1.5,
+    smokePrev:0.30+Math.random()*0.18,
+    ageSig:   0.18+Math.random()*0.65,
+    ageEff:   0.03+Math.random()*0.07,
+    agePrev:  0.75+Math.random()*0.20,
+    tumorSig: 0.08+Math.random()*0.40,
+    tumorEff: 0.05+Math.random()*0.10,
+    tumorPrev:0.55+Math.random()*0.20,
+  });
+}
+
+// cluster B — low Gene A, high Gene B, low Gene C  (tumor dominant)
+for (let i=0;i<200;i++) {
+  points.push({
+    x: Math.min(.97,Math.max(.03,rnd(.24,.08))),
+    y: Math.min(.97,Math.max(.03,rnd(.76,.08))),
+    z: Math.min(.97,Math.max(.03,rnd(.20,.07))),
+    smokeSig: 0.10+Math.random()*0.60,
+    smokeOR:  0.9+Math.random()*0.5,
+    smokePrev:0.40+Math.random()*0.20,
+    ageSig:   0.10+Math.random()*0.50,
+    ageEff:   0.04+Math.random()*0.09,
+    agePrev:  0.70+Math.random()*0.22,
+    tumorSig: 0.0001+Math.random()*0.010,
+    tumorEff: 0.45+Math.random()*0.35,
+    tumorPrev:0.12+Math.random()*0.10,
+  });
+}
+
+// scattered
+for (let i=0;i<120;i++) {
+  points.push({
+    x: 0.05+Math.random()*0.90,
+    y: 0.05+Math.random()*0.90,
+    z: 0.05+Math.random()*0.90,
+    smokeSig: 0.05+Math.random()*0.85,
+    smokeOR:  1.0+Math.random()*0.8,
+    smokePrev:0.30+Math.random()*0.30,
+    ageSig:   0.05+Math.random()*0.85,
+    ageEff:   0.02+Math.random()*0.08,
+    agePrev:  0.60+Math.random()*0.30,
+    tumorSig: 0.05+Math.random()*0.85,
+    tumorEff: 0.04+Math.random()*0.14,
+    tumorPrev:0.20+Math.random()*0.40,
+  });
+}
+
+// ── 3D projection ─────────────────────────────────────────────────────────────
+function rotPt(px, py, pz) {
+  let x=px-0.5, y=py-0.5, z=pz-0.5;
+  let cosY=Math.cos(rotY), sinY=Math.sin(rotY);
+  let x2= cosY*x+sinY*z, z2=-sinY*x+cosY*z;
+  let cosX=Math.cos(rotX), sinX=Math.sin(rotX);
+  let y3=cosX*y-sinX*z2, z3=sinX*y+cosX*z2;
+  const fov=3.0, w=fov/(fov+z3);
+  return { sx: CX+x2*SCALE*w, sy: CY-y3*SCALE*w, z: z3, w };
+}
+
+// project point onto xy plane (z=0)
+function projXY(px, py) { return rotPt(px, py, 0); }
+
+function draw() {
+  ctx.clearRect(0,0,CW,CH);
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(0,0,CW,CH);
+
+  // box edges
+  const corners = [[0,0,0],[1,0,0],[1,1,0],[0,1,0],
+                   [0,0,1],[1,0,1],[1,1,1],[0,1,1]].map(([x,y,z])=>rotPt(x,y,z));
+  const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],
+                 [0,4],[1,5],[2,6],[3,7]];
+  ctx.strokeStyle='#ccd0d9';
+  ctx.lineWidth=0.8;
+  edges.forEach(([a,b])=>{
+    ctx.beginPath();
+    ctx.moveTo(corners[a].sx,corners[a].sy);
+    ctx.lineTo(corners[b].sx,corners[b].sy);
+    ctx.stroke();
+  });
+
+  // xy plane grid (z=0 plane)
+  ctx.strokeStyle='rgba(180,190,210,0.45)';
+  ctx.lineWidth=0.6;
+  for(let i=0;i<=5;i++){
+    const t=i/5;
+    const a=rotPt(t,0,0), b=rotPt(t,1,0);
+    ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
+    const c=rotPt(0,t,0), d=rotPt(1,t,0);
+    ctx.beginPath(); ctx.moveTo(c.sx,c.sy); ctx.lineTo(d.sx,d.sy); ctx.stroke();
+  }
+
+  // axes
+  const axDefs=[
+    {from:[0,0,0],to:[1,0,0],label:'Gene A',color:'#1d6fa5'},
+    {from:[0,0,0],to:[0,1,0],label:'Gene B',color:'#2a9d4e'},
+    {from:[0,0,0],to:[0,0,1],label:'Gene C',color:'#9b59b6'},
+  ];
+  axDefs.forEach(ax=>{
+    const f=rotPt(...ax.from), t=rotPt(...ax.to);
+    ctx.strokeStyle=ax.color; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(f.sx,f.sy); ctx.lineTo(t.sx,t.sy); ctx.stroke();
+    const ang=Math.atan2(t.sy-f.sy,t.sx-f.sx);
+    ctx.fillStyle=ax.color;
+    ctx.beginPath();
+    ctx.moveTo(t.sx,t.sy);
+    ctx.lineTo(t.sx-11*Math.cos(ang-0.38),t.sy-11*Math.sin(ang-0.38));
+    ctx.lineTo(t.sx-11*Math.cos(ang+0.38),t.sy-11*Math.sin(ang+0.38));
+    ctx.closePath(); ctx.fill();
+    // label — offset outward from tip
+    const ox=(t.sx-f.sx)*0.15, oy=(t.sy-f.sy)*0.15;
+    ctx.font='bold 24px Georgia';
+    ctx.textAlign='center';
+    ctx.fillStyle=ax.color;
+    ctx.fillText(ax.label, t.sx+ox, t.sy+oy+5);
+  });
+
+  // sort points back→front
+  const proj=points.map((p,i)=>{ const r=rotPt(p.x,p.y,p.z); return{...r,idx:i}; });
+  proj.sort((a,b)=>a.z-b.z);
+
+  // draw projection shadows + dashed drop lines
+  proj.forEach(pr=>{
+    const i=pr.idx, p=points[i];
+    const shadow=projXY(p.x,p.y);
+    ctx.beginPath();
+    ctx.arc(shadow.sx,shadow.sy,3.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(210,100,20,0.50)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.setLineDash([3,3]);
+    ctx.strokeStyle='rgba(210,100,20,0.45)';
+    ctx.lineWidth=1.3;
+    ctx.moveTo(pr.sx,pr.sy);
+    ctx.lineTo(shadow.sx,shadow.sy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // draw 3D points
+  proj.forEach(pr=>{
+    const i=pr.idx, isSel=i===selectedIdx;
+    const r=isSel?8:4;
+    if(isSel){
+      ctx.beginPath();
+      ctx.arc(pr.sx,pr.sy,16,0,Math.PI*2);
+      ctx.strokeStyle='rgba(217,97,32,0.3)';
+      ctx.lineWidth=1.2;
+      ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(pr.sx,pr.sy,r,0,Math.PI*2);
+      ctx.fillStyle='#d96120'; ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(pr.sx,pr.sy,r,0,Math.PI*2);
+      ctx.fillStyle='rgba(30,100,200,0.60)'; ctx.fill();
+    }
+  });
+}
+
+draw();
+
+// ── mouse ─────────────────────────────────────────────────────────────────────
+canvas.addEventListener('mousedown',e=>{
+  dragging=true; lastMX=e.clientX; lastMY=e.clientY;
+  canvas.classList.add('grabbing');
+});
+window.addEventListener('mousemove',e=>{
+  if(dragging){
+    rotY+=(e.clientX-lastMX)*0.008;
+    rotX+=(e.clientY-lastMY)*0.008;
+    lastMX=e.clientX; lastMY=e.clientY;
+    draw();
+  }
+});
+window.addEventListener('mouseup',e=>{
+  if(!dragging) return;
+  dragging=false; canvas.classList.remove('grabbing');
+});
+
+// ── hover ─────────────────────────────────────────────────────────────────────
+let hoverIdx=null, hoverTimeout=null, sequenceTimeout=null, sequencePlaying=false;
+let activeOscs=[], seqIndex=0;
+const SEQ_KEYS=['age','smoking','tumor'];
+
+canvas.addEventListener('mousemove',e=>{
+  if(dragging) return;
+  const rect=canvas.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)*(CW/rect.width);
+  const my=(e.clientY-rect.top)*(CH/rect.height);
+  let best=null, bestD=Infinity;
+  points.forEach((p,i)=>{
+    const pr=rotPt(p.x,p.y,p.z);
+    const d=Math.hypot(pr.sx-mx,pr.sy-my);
+    if(d<bestD){bestD=d;best=i;}
+  });
+  const near=best!==null&&bestD<24;
+  if(near&&best!==hoverIdx){
+    hoverIdx=best;
+    canvas.style.cursor='pointer';
+    clearTimeout(hoverTimeout);
+    stopSeq();
+    hoverTimeout=setTimeout(()=>{ selectPt(best); playSeq(); },100);
+  } else if(!near&&hoverIdx!==null){
+    clearTimeout(hoverTimeout);
+    hoverIdx=null;
+    canvas.style.cursor='grab';
+  }
+});
+
+canvas.addEventListener('mouseleave',()=>{
+  clearTimeout(hoverTimeout); hoverIdx=null; canvas.style.cursor='grab';
+});
+
+function selectPt(idx){
+  selectedIdx=idx; currentPoint=points[idx];
+  ['age','smoking','tumor'].forEach(k=>
+    document.getElementById('card-'+k).classList.remove('active'));
+  updateChips();
+  document.getElementById('interp-text').className='interp-text';
+  document.getElementById('interp-text').textContent='Playing acoustic signatures...';
+  document.getElementById('bottom-hint').textContent='▶ playing...';
+  draw();
+}
+
+function stopSeq(){
+  sequencePlaying=false; clearTimeout(sequenceTimeout);
+  activeOscs.forEach(o=>{try{o.stop();}catch(e){}});
+  activeOscs=[]; seqIndex=0;
+  ['age','smoking','tumor'].forEach(k=>
+    document.getElementById('card-'+k).classList.remove('active'));
+}
+
+function playSeq(){
+  if(!currentPoint) return;
+  stopSeq(); sequencePlaying=true; seqIndex=0; playNext();
+}
+
+function playNext(){
+  if(!sequencePlaying||seqIndex>=SEQ_KEYS.length){
+    sequencePlaying=false;
+    ['age','smoking','tumor'].forEach(k=>
+      document.getElementById('card-'+k).classList.remove('active'));
+    document.getElementById('bottom-hint').textContent='hover over another point';
+    return;
+  }
+  const key=SEQ_KEYS[seqIndex], p=currentPoint;
+  let freq,type,gain,dur,interp;
+  if(key==='age'){
+    freq=pToFreq(p.ageSig);type='sine';gain=effToGain(p.ageEff);dur=prevToDur(p.agePrev);
+    interp=mkInterp('Patient Age',p.ageSig,type,gain,dur,
+      'effect size '+p.ageEff.toFixed(2)+', '+Math.round(p.agePrev*100)+'% of patients');
+  } else if(key==='smoking'){
+    freq=pToFreq(p.smokeSig);type='sawtooth';gain=effToGain(Math.min(1,(p.smokeOR-1)/3));dur=prevToDur(p.smokePrev);
+    interp=mkInterp('Smoking History',p.smokeSig,type,gain,dur,
+      'OR='+p.smokeOR.toFixed(1)+', '+Math.round(p.smokePrev*100)+'% of patients');
+  } else {
+    freq=pToFreq(p.tumorSig);type='sine';gain=effToGain(p.tumorEff);dur=prevToDur(p.tumorPrev);
+    interp=mkInterp('Tumor Size',p.tumorSig,type,gain,dur,
+      'effect size '+p.tumorEff.toFixed(2)+', '+Math.round(p.tumorPrev*100)+'% of patients');
+  }
+  ['age','smoking','tumor'].forEach(k=>
+    document.getElementById('card-'+k).classList.toggle('active',k===key));
+  const box=document.getElementById('interp-text');
+  box.className='interp-text has-content';
+  box.innerHTML='<span class="playing-indicator"></span>'+interp;
+  const osc=playSnd(freq,type,gain,dur);
+  if(osc) activeOscs.push(osc);
+  seqIndex++;
+  sequenceTimeout=setTimeout(playNext,(dur+0.04)*1000);
+}
+
+// ── audio helpers ─────────────────────────────────────────────────────────────
+let audioCtx=null;
+function getAC(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function pToFreq(p){ return 150+Math.max(0,Math.min(1,-Math.log10(p)/5))*900; }
+function effToGain(e){ return 0.08+Math.min(0.58,e*0.7); }
+function prevToDur(v){ return 0.18+v*1.2; }
+
+function playSnd(freq,type,gain,dur){
+  const ac=getAC(),osc=ac.createOscillator(),g=ac.createGain();
+  osc.connect(g);g.connect(ac.destination);
+  osc.type=type;osc.frequency.setValueAtTime(freq,ac.currentTime);
+  g.gain.setValueAtTime(gain,ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+dur);
+  osc.start(ac.currentTime);osc.stop(ac.currentTime+dur+0.05);
+  return osc;
+}
+
+function pLbl(p){ return p<0.001?'very high (p<0.001)':p<0.01?'high (p='+p.toFixed(3)+')':p<0.05?'medium (p='+p.toFixed(2)+')':'low (p='+p.toFixed(2)+')'; }
+function gLbl(g){ return g>0.45?'loud':g>0.25?'medium':'soft'; }
+function dLbl(d){ const ms=Math.round(d*1000); return d>1.6?'long ('+ms+'ms)':d>0.7?'medium ('+ms+'ms)':'short ('+ms+'ms)'; }
+
+function updateChips(){
+  if(!currentPoint) return;
+  const p=currentPoint;
+  document.getElementById('p-age-pitch').textContent    =pLbl(p.ageSig);
+  document.getElementById('p-age-gain').textContent     =gLbl(effToGain(p.ageEff));
+  document.getElementById('p-age-dur').textContent      =dLbl(prevToDur(p.agePrev));
+  document.getElementById('p-smoking-pitch').textContent=pLbl(p.smokeSig);
+  document.getElementById('p-smoking-gain').textContent =gLbl(effToGain(Math.min(1,(p.smokeOR-1)/3)));
+  document.getElementById('p-smoking-dur').textContent  =dLbl(prevToDur(p.smokePrev));
+  document.getElementById('p-tumor-pitch').textContent  =pLbl(p.tumorSig);
+  document.getElementById('p-tumor-gain').textContent   =gLbl(effToGain(p.tumorEff));
+  document.getElementById('p-tumor-dur').textContent    =dLbl(prevToDur(p.tumorPrev));
+}
+
+function mkInterp(name,pval,type,gain,dur,extra){
+  const sig=pval<0.001?'highly significant — crosses Bonferroni threshold':pval<0.05?'significant (p='+pval.toFixed(3)+')':'not significant (p='+pval.toFixed(2)+')';
+  const pw=pval<0.001?'very high':pval<0.05?'medium-high':'low';
+  const tw=type==='sine'?'flute-like tone (continuous variable)':'violin-like tone (categorical variable)';
+  const gw=gain>0.45?'loud':gain>0.25?'medium':'soft';
+  const dw=dur>1.6?'sustained note':dur>0.7?'medium note':'short staccato click';
+  return name+': '+pw+' pitch ('+sig+') · '+tw+' · '+gw+' ('+extra+') · '+dw+'.';
+}
+
+function playVar(key){}
+</script>
+</body>
+</html>
