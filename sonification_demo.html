@@ -16,7 +16,7 @@
   }
 
   header {
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 0 auto 22px;
     border-bottom: 2px solid #d0d7de;
     padding-bottom: 14px;
@@ -29,6 +29,7 @@
     letter-spacing: 0.01em;
   }
 
+  /* ── layout ── */
   .main {
     max-width: 1200px;
     margin: 0 auto;
@@ -46,8 +47,6 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
   }
 
-  .panel-label { display: none; }
-
   canvas {
     display: block;
     width: 100%;
@@ -56,22 +55,19 @@
     cursor: grab;
     background: #ffffff;
   }
-
   canvas.grabbing { cursor: grabbing; }
 
-  .dims-note {
+  /* removed dims-note / colored hint */
+  .plot-hint {
     margin-top: 10px;
-    padding: 10px 16px;
-    background: #fff8f0;
-    border: 1.5px solid #f0883e;
-    border-radius: 6px;
-    font-size: 19px;
-    color: #c05a00;
+    padding: 9px 14px;
+    font-size: 17px;
+    color: #555;
     font-family: 'Georgia', serif;
     line-height: 1.6;
-    font-weight: bold;
   }
 
+  /* ── right panel ── */
   .var-panel {
     background: #ffffff;
     border: 1.5px solid #d0d7de;
@@ -95,12 +91,10 @@
     border: 1.5px solid #d0d7de;
     border-radius: 8px;
     padding: 14px 16px;
-    cursor: pointer;
+    cursor: default;
     transition: border-color 0.15s, background 0.15s;
     background: #f8fafc;
   }
-
-  .var-card:hover { border-color: #0969da; background: #f0f6ff; }
   .var-card.active { border-color: #0969da; background: #dbeafe; }
 
   .var-card-top {
@@ -116,16 +110,16 @@
     font-family: 'Georgia', serif;
   }
 
+  /* ── #3: unified badge color ── */
   .var-type {
     font-size: 15px;
     padding: 3px 10px;
     border-radius: 4px;
     font-family: 'Georgia', serif;
     font-weight: bold;
+    background: #e8edf3;
+    color: #444;
   }
-
-  .var-type.continuous { background: #dbeafe; color: #1d4ed8; }
-  .var-type.categorical { background: #fef3c7; color: #92400e; }
 
   .var-params {
     margin-top: 9px;
@@ -133,7 +127,6 @@
     grid-template-columns: 1fr 1fr;
     gap: 4px;
   }
-
   .var-card.active .var-params { display: grid; }
 
   .param-chip {
@@ -143,7 +136,6 @@
     padding: 2px 0;
     line-height: 1.5;
   }
-
   .param-chip span { color: #1d4ed8; font-weight: bold; }
 
   .sound-icon { width: 26px; height: 26px; display: flex; align-items: center; flex-shrink: 0; }
@@ -174,9 +166,9 @@
     line-height: 1.75;
     font-family: 'Georgia', serif;
   }
-
   .interp-text.has-content { color: #1a1a2e; }
 
+  /* ── legend ── */
   .legend {
     max-width: 1200px;
     margin: 16px auto 0;
@@ -194,12 +186,13 @@
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   }
 
+  /* ── #6: legend uses dark color, not orange/projection color ── */
   .legend-param {
     font-family: 'Georgia', serif;
     font-size: 16px;
     font-weight: bold;
     letter-spacing: 0.08em;
-    color: #c05a00;
+    color: #1a1a2e;
     text-transform: uppercase;
     margin-bottom: 4px;
   }
@@ -207,7 +200,7 @@
   .legend-meaning {
     font-size: 19px;
     font-weight: bold;
-    color: #1a1a2e;
+    color: #0969da;
     margin-bottom: 4px;
     font-family: 'Georgia', serif;
   }
@@ -219,6 +212,13 @@
     line-height: 1.55;
   }
 
+  .bottom-hint {
+    font-size: 16px;
+    color: #888;
+    font-family: 'Georgia', serif;
+    text-align: center;
+  }
+
   .playing-indicator {
     display: inline-block;
     width: 9px; height: 9px;
@@ -228,17 +228,9 @@
     animation: pulse 0.6s ease-in-out infinite alternate;
     vertical-align: middle;
   }
-
   @keyframes pulse {
     from { opacity: 0.4; transform: scale(0.8); }
     to   { opacity: 1;   transform: scale(1.2); }
-  }
-
-  .bottom-hint {
-    font-size: 16px;
-    color: #888;
-    font-family: 'Georgia', serif;
-    text-align: center;
   }
 </style>
 </head>
@@ -249,22 +241,26 @@
 </header>
 
 <div class="main">
+
   <div class="plot-panel">
-    <div class="panel-label">3D Scatter Plot — Gene A · Gene B · Gene C expression</div>
-    <canvas id="c3d" width="1300" height="1050"></canvas>
-    <div class="dims-note">
-      ▶ 3 dimensions left behind — hover over any point to hear what was left behind
+    <canvas id="c3d" width="1100" height="880"></canvas>
+    <!-- #4: no orange color, no "3 dimensions left behind" -->
+    <div class="plot-hint">
+      Hover over any point to hear the patient-specific variables left behind the visualization.
+      n = 560 lung cancer patient observations (adenocarcinoma vs. squamous cell carcinoma).
     </div>
   </div>
 
+  <!-- #7: var-panel aligns to top of grid, no extra space above -->
   <div class="var-panel">
     <div class="var-panel-title">Variables at selected point</div>
 
-    <div class="var-card" id="card-age" onclick="playVar('age')">
+    <div class="var-card" id="card-age">
       <div class="var-card-top">
         <span class="var-name">Patient Age</span>
-        <div style="display:flex;align-items:center;gap:7px;">
-          <span class="var-type continuous">continuous</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <!-- #3: unified badge -->
+          <span class="var-type">continuous</span>
           <div class="sound-icon"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></div>
         </div>
       </div>
@@ -276,11 +272,11 @@
       </div>
     </div>
 
-    <div class="var-card" id="card-smoking" onclick="playVar('smoking')">
+    <div class="var-card" id="card-smoking">
       <div class="var-card-top">
         <span class="var-name">Smoking History</span>
-        <div style="display:flex;align-items:center;gap:7px;">
-          <span class="var-type categorical">categorical</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="var-type">categorical</span>
           <div class="sound-icon"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/></svg></div>
         </div>
       </div>
@@ -292,11 +288,11 @@
       </div>
     </div>
 
-    <div class="var-card" id="card-tumor" onclick="playVar('tumor')">
+    <div class="var-card" id="card-tumor">
       <div class="var-card-top">
         <span class="var-name">Tumor Size</span>
-        <div style="display:flex;align-items:center;gap:7px;">
-          <span class="var-type continuous">continuous</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="var-type">continuous</span>
           <div class="sound-icon"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></div>
         </div>
       </div>
@@ -310,18 +306,19 @@
 
     <div class="interpretation-box">
       <div class="interp-label">Interpretation</div>
-      <div class="interp-text" id="interp-text">Move the mouse over any data point in the 3D plot to hear its acoustic signature.</div>
+      <div class="interp-text" id="interp-text">Move the mouse over any data point to hear the acoustic signature of the variables not shown in the plot.</div>
     </div>
 
     <div class="bottom-hint" id="bottom-hint">hover over any point to hear it</div>
   </div>
 </div>
 
+<!-- #6: legend with corrected colors and p-value explanation -->
 <div class="legend">
   <div class="legend-item">
     <div class="legend-param">Pitch</div>
     <div class="legend-meaning">p-value</div>
-    <div class="legend-detail">low p-value<br>→ high pitch</div>
+    <div class="legend-detail">logistic regression<br>adeno vs. squamous<br>low p → high pitch</div>
   </div>
   <div class="legend-item">
     <div class="legend-param">Timbre</div>
@@ -342,32 +339,36 @@
 
 <script>
 const canvas = document.getElementById('c3d');
-const ctx = canvas.getContext('2d');
-const CW = 1300, CH = 1050;
-const CX = CW / 2, CY = CH / 2 + 60;
-const SCALE = 430;
+const ctx    = canvas.getContext('2d');
+const CW = 1100, CH = 880;
+const CX = CW/2, CY = CH/2+60;
+let SCALE = 430;
+const SCALE_MIN = 150, SCALE_MAX = 900;
 
-let rotX = 0.38, rotY = -0.58;
-let dragging = false, lastMX = 0, lastMY = 0;
-let selectedIdx = null, currentPoint = null;
+let rotX=0.38, rotY=-0.58;
+let dragging=false, lastMX=0, lastMY=0;
+let selectedIdx=null, currentPoint=null;
 
-// ── data ──────────────────────────────────────────────────────────────────────
-function rnd(mu, s) {
+// ── data: adenocarcinoma (cluster A) vs squamous (cluster B) ──────────────────
+function rnd(mu,s){
   let u=0,v=0;
   while(!u) u=Math.random();
   while(!v) v=Math.random();
-  return mu + s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  return mu+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
 }
 
-const points = [];
+const points=[];
 
-// cluster A — high Gene A, low Gene B, mid Gene C  (smoking dominant)
-for (let i=0;i<240;i++) {
+// cluster A — adenocarcinoma (240 patients)
+// smoking sig: low p (smoking is a strong covariate in adeno)
+for(let i=0;i<240;i++){
   points.push({
-    x: Math.min(.97,Math.max(.03,rnd(.72,.09))),
-    y: Math.min(.97,Math.max(.03,rnd(.26,.08))),
-    z: Math.min(.97,Math.max(.03,rnd(.52,.09))),
-    smokeSig: 0.00005+Math.random()*0.006,
+    cluster:'adeno',
+    x:Math.min(.97,Math.max(.03,rnd(.72,.09))),
+    y:Math.min(.97,Math.max(.03,rnd(.26,.08))),
+    z:Math.min(.97,Math.max(.03,rnd(.52,.09))),
+    // p-values from logistic regression adeno vs squamous
+    smokeSig: 0.00005+Math.random()*0.005,   // smoking: highly sig in adeno cluster
     smokeOR:  2.8+Math.random()*1.5,
     smokePrev:0.30+Math.random()*0.18,
     ageSig:   0.18+Math.random()*0.65,
@@ -379,30 +380,33 @@ for (let i=0;i<240;i++) {
   });
 }
 
-// cluster B — low Gene A, high Gene B, low Gene C  (tumor dominant)
-for (let i=0;i<200;i++) {
+// cluster B — squamous cell carcinoma (200 patients)
+// tumor size: highly sig in squamous cluster
+for(let i=0;i<200;i++){
   points.push({
-    x: Math.min(.97,Math.max(.03,rnd(.24,.08))),
-    y: Math.min(.97,Math.max(.03,rnd(.76,.08))),
-    z: Math.min(.97,Math.max(.03,rnd(.20,.07))),
-    smokeSig: 0.10+Math.random()*0.60,
+    cluster:'squamous',
+    x:Math.min(.97,Math.max(.03,rnd(.24,.08))),
+    y:Math.min(.97,Math.max(.03,rnd(.76,.08))),
+    z:Math.min(.97,Math.max(.03,rnd(.20,.07))),
+    smokeSig: 0.12+Math.random()*0.60,
     smokeOR:  0.9+Math.random()*0.5,
     smokePrev:0.40+Math.random()*0.20,
     ageSig:   0.10+Math.random()*0.50,
     ageEff:   0.04+Math.random()*0.09,
     agePrev:  0.70+Math.random()*0.22,
-    tumorSig: 0.0001+Math.random()*0.010,
+    tumorSig: 0.0001+Math.random()*0.010,   // tumor size: highly sig in squamous
     tumorEff: 0.45+Math.random()*0.35,
     tumorPrev:0.12+Math.random()*0.10,
   });
 }
 
-// scattered
-for (let i=0;i<120;i++) {
+// scattered — 120 patients (mixed)
+for(let i=0;i<120;i++){
   points.push({
-    x: 0.05+Math.random()*0.90,
-    y: 0.05+Math.random()*0.90,
-    z: 0.05+Math.random()*0.90,
+    cluster:'mixed',
+    x:0.05+Math.random()*0.90,
+    y:0.05+Math.random()*0.90,
+    z:0.05+Math.random()*0.90,
     smokeSig: 0.05+Math.random()*0.85,
     smokeOR:  1.0+Math.random()*0.8,
     smokePrev:0.30+Math.random()*0.30,
@@ -415,109 +419,105 @@ for (let i=0;i<120;i++) {
   });
 }
 
-// ── 3D projection ─────────────────────────────────────────────────────────────
-function rotPt(px, py, pz) {
+// ── 3D math ───────────────────────────────────────────────────────────────────
+function rotPt(px,py,pz){
   let x=px-0.5, y=py-0.5, z=pz-0.5;
-  let cosY=Math.cos(rotY), sinY=Math.sin(rotY);
-  let x2= cosY*x+sinY*z, z2=-sinY*x+cosY*z;
-  let cosX=Math.cos(rotX), sinX=Math.sin(rotX);
-  let y3=cosX*y-sinX*z2, z3=sinX*y+cosX*z2;
+  let cY=Math.cos(rotY),sY=Math.sin(rotY);
+  let x2=cY*x+sY*z, z2=-sY*x+cY*z;
+  let cX=Math.cos(rotX),sX=Math.sin(rotX);
+  let y3=cX*y-sX*z2, z3=sX*y+cX*z2;
   const fov=3.0, w=fov/(fov+z3);
-  return { sx: CX+x2*SCALE*w, sy: CY-y3*SCALE*w, z: z3, w };
+  return{sx:CX+x2*SCALE*w, sy:CY-y3*SCALE*w, z:z3, w};
 }
+function projXY(px,py){ return rotPt(px,py,0); }
 
-// project point onto xy plane (z=0)
-function projXY(px, py) { return rotPt(px, py, 0); }
-
-function draw() {
+// ── draw ──────────────────────────────────────────────────────────────────────
+function draw(){
   ctx.clearRect(0,0,CW,CH);
   ctx.fillStyle='#ffffff';
   ctx.fillRect(0,0,CW,CH);
 
   // box edges
-  const corners = [[0,0,0],[1,0,0],[1,1,0],[0,1,0],
-                   [0,0,1],[1,0,1],[1,1,1],[0,1,1]].map(([x,y,z])=>rotPt(x,y,z));
-  const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],
-                 [0,4],[1,5],[2,6],[3,7]];
-  ctx.strokeStyle='#ccd0d9';
-  ctx.lineWidth=0.8;
+  const corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],
+                  [0,0,1],[1,0,1],[1,1,1],[0,1,1]].map(([x,y,z])=>rotPt(x,y,z));
+  const edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+  ctx.strokeStyle='#ccd0d9'; ctx.lineWidth=0.8;
   edges.forEach(([a,b])=>{
-    ctx.beginPath();
-    ctx.moveTo(corners[a].sx,corners[a].sy);
-    ctx.lineTo(corners[b].sx,corners[b].sy);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(corners[a].sx,corners[a].sy);
+    ctx.lineTo(corners[b].sx,corners[b].sy); ctx.stroke();
   });
 
-  // xy plane grid (z=0 plane)
-  ctx.strokeStyle='rgba(180,190,210,0.45)';
-  ctx.lineWidth=0.6;
+  // floor grid
+  ctx.strokeStyle='rgba(180,190,210,0.4)'; ctx.lineWidth=0.5;
   for(let i=0;i<=5;i++){
     const t=i/5;
-    const a=rotPt(t,0,0), b=rotPt(t,1,0);
+    const a=rotPt(t,0,0),b=rotPt(t,1,0);
     ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
-    const c=rotPt(0,t,0), d=rotPt(1,t,0);
+    const c=rotPt(0,t,0),d=rotPt(1,t,0);
     ctx.beginPath(); ctx.moveTo(c.sx,c.sy); ctx.lineTo(d.sx,d.sy); ctx.stroke();
   }
 
-  // axes
+  // #1: axes and labels — black
   const axDefs=[
-    {from:[0,0,0],to:[1,0,0],label:'Gene A',color:'#1d6fa5'},
-    {from:[0,0,0],to:[0,1,0],label:'Gene B',color:'#2a9d4e'},
-    {from:[0,0,0],to:[0,0,1],label:'Gene C',color:'#9b59b6'},
+    {from:[0,0,0],to:[1,0,0],label:'Gene A'},
+    {from:[0,0,0],to:[0,1,0],label:'Gene B'},
+    {from:[0,0,0],to:[0,0,1],label:'Gene C'},
   ];
   axDefs.forEach(ax=>{
-    const f=rotPt(...ax.from), t=rotPt(...ax.to);
-    ctx.strokeStyle=ax.color; ctx.lineWidth=2.5;
+    const f=rotPt(...ax.from),t=rotPt(...ax.to);
+    ctx.strokeStyle='#111'; ctx.lineWidth=2.5;
     ctx.beginPath(); ctx.moveTo(f.sx,f.sy); ctx.lineTo(t.sx,t.sy); ctx.stroke();
     const ang=Math.atan2(t.sy-f.sy,t.sx-f.sx);
-    ctx.fillStyle=ax.color;
+    ctx.fillStyle='#111';
     ctx.beginPath();
     ctx.moveTo(t.sx,t.sy);
-    ctx.lineTo(t.sx-11*Math.cos(ang-0.38),t.sy-11*Math.sin(ang-0.38));
-    ctx.lineTo(t.sx-11*Math.cos(ang+0.38),t.sy-11*Math.sin(ang+0.38));
+    ctx.lineTo(t.sx-12*Math.cos(ang-0.38),t.sy-12*Math.sin(ang-0.38));
+    ctx.lineTo(t.sx-12*Math.cos(ang+0.38),t.sy-12*Math.sin(ang+0.38));
     ctx.closePath(); ctx.fill();
-    // label — offset outward from tip
     const ox=(t.sx-f.sx)*0.15, oy=(t.sy-f.sy)*0.15;
     ctx.font='bold 24px Georgia';
     ctx.textAlign='center';
-    ctx.fillStyle=ax.color;
+    ctx.fillStyle='#111';
     ctx.fillText(ax.label, t.sx+ox, t.sy+oy+5);
   });
 
-  // sort points back→front
-  const proj=points.map((p,i)=>{ const r=rotPt(p.x,p.y,p.z); return{...r,idx:i}; });
+  // sort back→front
+  const proj=points.map((p,i)=>({...rotPt(p.x,p.y,p.z),idx:i}));
   proj.sort((a,b)=>a.z-b.z);
 
-  // draw projection shadows + dashed drop lines
+  // #2: projection lines — green only for selected point
   proj.forEach(pr=>{
-    const i=pr.idx, p=points[i];
+    const i=pr.idx, isSel=i===selectedIdx;
+    if(!isSel) return; // only draw projection for selected point
+    const p=points[i];
     const shadow=projXY(p.x,p.y);
     ctx.beginPath();
-    ctx.arc(shadow.sx,shadow.sy,3.5,0,Math.PI*2);
-    ctx.fillStyle='rgba(210,100,20,0.50)';
+    ctx.arc(shadow.sx,shadow.sy,5,0,Math.PI*2);
+    ctx.fillStyle='rgba(22,160,70,0.7)';
     ctx.fill();
     ctx.beginPath();
-    ctx.setLineDash([3,3]);
-    ctx.strokeStyle='rgba(210,100,20,0.45)';
-    ctx.lineWidth=1.3;
+    ctx.setLineDash([4,3]);
+    ctx.strokeStyle='rgba(22,160,70,0.7)';
+    ctx.lineWidth=1.8;
     ctx.moveTo(pr.sx,pr.sy);
     ctx.lineTo(shadow.sx,shadow.sy);
     ctx.stroke();
     ctx.setLineDash([]);
   });
 
-  // draw 3D points
+  // data points
   proj.forEach(pr=>{
     const i=pr.idx, isSel=i===selectedIdx;
-    const r=isSel?8:4;
+    const r=isSel?9:4;
     if(isSel){
+      // #2: selected point — green
       ctx.beginPath();
-      ctx.arc(pr.sx,pr.sy,16,0,Math.PI*2);
-      ctx.strokeStyle='rgba(217,97,32,0.3)';
-      ctx.lineWidth=1.2;
+      ctx.arc(pr.sx,pr.sy,18,0,Math.PI*2);
+      ctx.strokeStyle='rgba(22,160,70,0.3)';
+      ctx.lineWidth=1.5;
       ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
       ctx.beginPath(); ctx.arc(pr.sx,pr.sy,r,0,Math.PI*2);
-      ctx.fillStyle='#d96120'; ctx.fill();
+      ctx.fillStyle='#16a046'; ctx.fill();
     } else {
       ctx.beginPath(); ctx.arc(pr.sx,pr.sy,r,0,Math.PI*2);
       ctx.fillStyle='rgba(30,100,200,0.60)'; ctx.fill();
@@ -527,7 +527,7 @@ function draw() {
 
 draw();
 
-// ── mouse ─────────────────────────────────────────────────────────────────────
+// ── mouse drag ────────────────────────────────────────────────────────────────
 canvas.addEventListener('mousedown',e=>{
   dragging=true; lastMX=e.clientX; lastMY=e.clientY;
   canvas.classList.add('grabbing');
@@ -540,10 +540,17 @@ window.addEventListener('mousemove',e=>{
     draw();
   }
 });
-window.addEventListener('mouseup',e=>{
-  if(!dragging) return;
+window.addEventListener('mouseup',()=>{
   dragging=false; canvas.classList.remove('grabbing');
 });
+
+// ── scroll zoom ───────────────────────────────────────────────────────────────
+canvas.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -18 : 18;
+  SCALE = Math.max(SCALE_MIN, Math.min(SCALE_MAX, SCALE + delta));
+  draw();
+}, { passive: false });
 
 // ── hover ─────────────────────────────────────────────────────────────────────
 let hoverIdx=null, hoverTimeout=null, sequenceTimeout=null, sequencePlaying=false;
@@ -561,17 +568,13 @@ canvas.addEventListener('mousemove',e=>{
     const d=Math.hypot(pr.sx-mx,pr.sy-my);
     if(d<bestD){bestD=d;best=i;}
   });
-  const near=best!==null&&bestD<24;
+  const near=best!==null&&bestD<26;
   if(near&&best!==hoverIdx){
-    hoverIdx=best;
-    canvas.style.cursor='pointer';
-    clearTimeout(hoverTimeout);
-    stopSeq();
+    hoverIdx=best; canvas.style.cursor='pointer';
+    clearTimeout(hoverTimeout); stopSeq();
     hoverTimeout=setTimeout(()=>{ selectPt(best); playSeq(); },100);
   } else if(!near&&hoverIdx!==null){
-    clearTimeout(hoverTimeout);
-    hoverIdx=null;
-    canvas.style.cursor='grab';
+    clearTimeout(hoverTimeout); hoverIdx=null; canvas.style.cursor='grab';
   }
 });
 
@@ -614,15 +617,15 @@ function playNext(){
   const key=SEQ_KEYS[seqIndex], p=currentPoint;
   let freq,type,gain,dur,interp;
   if(key==='age'){
-    freq=pToFreq(p.ageSig);type='sine';gain=effToGain(p.ageEff);dur=prevToDur(p.agePrev);
+    freq=pToFreq(p.ageSig); type='sine'; gain=effToGain(p.ageEff); dur=prevToDur(p.agePrev);
     interp=mkInterp('Patient Age',p.ageSig,type,gain,dur,
       'effect size '+p.ageEff.toFixed(2)+', '+Math.round(p.agePrev*100)+'% of patients');
   } else if(key==='smoking'){
-    freq=pToFreq(p.smokeSig);type='sawtooth';gain=effToGain(Math.min(1,(p.smokeOR-1)/3));dur=prevToDur(p.smokePrev);
+    freq=pToFreq(p.smokeSig); type='sawtooth'; gain=effToGain(Math.min(1,(p.smokeOR-1)/3)); dur=prevToDur(p.smokePrev);
     interp=mkInterp('Smoking History',p.smokeSig,type,gain,dur,
       'OR='+p.smokeOR.toFixed(1)+', '+Math.round(p.smokePrev*100)+'% of patients');
   } else {
-    freq=pToFreq(p.tumorSig);type='sine';gain=effToGain(p.tumorEff);dur=prevToDur(p.tumorPrev);
+    freq=pToFreq(p.tumorSig); type='sine'; gain=effToGain(p.tumorEff); dur=prevToDur(p.tumorPrev);
     interp=mkInterp('Tumor Size',p.tumorSig,type,gain,dur,
       'effect size '+p.tumorEff.toFixed(2)+', '+Math.round(p.tumorPrev*100)+'% of patients');
   }
@@ -637,7 +640,7 @@ function playNext(){
   sequenceTimeout=setTimeout(playNext,(dur+0.04)*1000);
 }
 
-// ── audio helpers ─────────────────────────────────────────────────────────────
+// ── audio ─────────────────────────────────────────────────────────────────────
 let audioCtx=null;
 function getAC(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
 function pToFreq(p){ return 150+Math.max(0,Math.min(1,-Math.log10(p)/5))*900; }
@@ -646,11 +649,12 @@ function prevToDur(v){ return 0.18+v*1.2; }
 
 function playSnd(freq,type,gain,dur){
   const ac=getAC(),osc=ac.createOscillator(),g=ac.createGain();
-  osc.connect(g);g.connect(ac.destination);
-  osc.type=type;osc.frequency.setValueAtTime(freq,ac.currentTime);
+  osc.connect(g); g.connect(ac.destination);
+  osc.type=type;
+  osc.frequency.setValueAtTime(freq,ac.currentTime);
   g.gain.setValueAtTime(gain,ac.currentTime);
   g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+dur);
-  osc.start(ac.currentTime);osc.stop(ac.currentTime+dur+0.05);
+  osc.start(ac.currentTime); osc.stop(ac.currentTime+dur+0.05);
   return osc;
 }
 
@@ -673,12 +677,14 @@ function updateChips(){
 }
 
 function mkInterp(name,pval,type,gain,dur,extra){
-  const sig=pval<0.001?'highly significant — crosses Bonferroni threshold':pval<0.05?'significant (p='+pval.toFixed(3)+')':'not significant (p='+pval.toFixed(2)+')';
+  const sig=pval<0.001?'highly significant vs. Bonferroni threshold':
+            pval<0.05?'significant (p='+pval.toFixed(3)+')':
+            'not significant (p='+pval.toFixed(2)+')';
   const pw=pval<0.001?'very high':pval<0.05?'medium-high':'low';
-  const tw=type==='sine'?'flute-like tone (continuous variable)':'violin-like tone (categorical variable)';
+  const tw=type==='sine'?'flute tone (continuous)':'violin tone (categorical)';
   const gw=gain>0.45?'loud':gain>0.25?'medium':'soft';
   const dw=dur>1.6?'sustained note':dur>0.7?'medium note':'short staccato click';
-  return name+': '+pw+' pitch ('+sig+') · '+tw+' · '+gw+' ('+extra+') · '+dw+'.';
+  return name+': '+pw+' pitch ('+sig+', logistic regression adeno vs. squamous) · '+tw+' · '+gw+' ('+extra+') · '+dw+'.';
 }
 
 function playVar(key){}
