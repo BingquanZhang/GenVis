@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HMGCL — bandwidth 0.03 to 0.30</title>
+<style>
+  :root{ --ink:#16181d; --ink2:#4a5058; --ink3:#7b828c; --line:#dfe2e6;
+         --surface:#fcfcfb; --panel:#f5f6f7; --accent:#2166AC;
+         --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+  *{box-sizing:border-box}
+  html{height:100%}
+  html,body{margin:0;padding:0;background:var(--surface);color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  body{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+  header{flex:0 0 auto;padding:14px 26px 11px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 2px;font-size:18px;font-weight:650;letter-spacing:-.01em}
+  header p{margin:0;color:var(--ink2);font-size:12.5px}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .canvasbox{flex:1 1 auto;position:relative;min-height:0}
+  .readout{flex:0 0 auto;border-top:1px solid var(--line);padding:10px 26px 12px;
+    background:var(--panel);display:flex;flex-wrap:wrap;gap:0 34px;align-items:flex-start}
+  .stat{min-width:92px}
+  .stat .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+  .stat .v{font-family:var(--mono);font-size:15px;font-weight:600;margin-top:1px}
+  .stat .s{font-size:11px;color:var(--ink3)}
+  .legend{display:flex;gap:16px;align-items:center;margin-left:auto;font-size:12.5px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;
+    vertical-align:-1px;border:1px solid rgba(0,0,0,.28)}
+
+  .stage{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+  .bar{flex:0 0 auto;display:flex;align-items:center;gap:20px;
+       padding:12px 26px;border-top:1px solid var(--line);background:var(--panel)}
+  .angbox{font-family:var(--mono);font-size:30px;font-weight:650;
+          min-width:150px;letter-spacing:-.02em}
+  .angbox small{font-size:12px;font-weight:500;color:var(--ink3);
+                display:block;letter-spacing:.04em;text-transform:uppercase;margin-bottom:-2px}
+  input[type=range]{flex:1;accent-color:var(--accent);height:20px;margin:0}
+  .btn{font:inherit;font-size:14px;font-weight:600;padding:9px 22px;border-radius:7px;
+       border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;min-width:104px}
+</style></head><body>
+
+<header>
+  <h1>Bandwidth, 0.03 to 0.30</h1>
+  <p>HMGCL — TCGA lung, 503 LUAD vs 489 LUSC. Only the kernel bandwidth changes;
+     the data, the venation angle and the leaf outline geometry are otherwise fixed.</p>
+</header>
+
+<div class="stage">
+  <div class="canvasbox"><canvas id="cv"></canvas></div>
+  <div class="bar">
+    <div class="angbox"><small>bandwidth</small><span id="angv">0.187</span></div>
+    <input type="range" id="bw" min="0.03" max="0.30" step="0.001" value="0.187">
+    <button class="btn" id="play">&#9654; play</button>
+  </div>
+</div>
+
+<script id="leafdata" type="application/json">{"gene":"HMGCL","x":[5.362,5.256,5.013,5.305,5.172,6.075,5.881,5.967,5.524,5.348,5.684,5.758,5.821,5.1,6.368,6.367,5.271,5.765,5.429,5.139,5.466,4.748,5.741,5.428,5.972,5.087,4.683,6.086,5.487,5.242,5.574,5.297,5.256,5.436,5.609,5.979,5.476,5.85,5.326,5.394,5.255,5.652,5.127,5.963,5.599,4.934,5.695,4.817,5.615,5.618,4.83,5.553,5.885,5.211,5.194,4.982,5.373,5.62,0.0,4.77,4.964,5.404,5.835,5.498,5.574,6.442,6.385,4.124,5.415,5.842,5.229,5.579,4.823,4.881,6.152,4.904,5.36,5.88,6.574,5.723,5.517,5.714,5.113,6.342,5.326,5.283,6.594,5.212,5.394,5.851,6.143,5.369,5.417,5.262,6.098,4.424,5.219,5.631,4.916,6.006,5.629,5.231,5.491,5.071,4.769,5.293,6.014,4.687,5.859,4.961,5.777,5.276,5.437,5.116,5.125,5.721,5.604,5.9,6.003,5.326,5.385,5.06,5.291,5.321,6.061,4.948,3.039,4.914,6.669,5.395,5.583,5.77,5.412,5.432,5.818,5.572,5.436,4.883,5.482,5.532,5.469,5.503,6.026,5.148,5.138,4.556,5.739,5.192,3.892,5.497,6.058,5.395,5.876,5.395,5.591,5.087,4.868,4.864,5.016,5.367,6.033,4.692,5.62,5.241,5.649,5.272,6.122,5.137,5.434,5.38,4.861,5.812,6.004,5.517,6.09,6.208,5.824,5.568,5.123,5.222,5.074,6.1,5.243,5.121,5.223,4.727,5.358,6.118,5.315,5.489,5.148,5.694,4.321,5.923,5.233,5.515,5.699,5.496,5.677,5.415,6.022,5.345,5.427,4.934,5.054,5.773,5.393,5.167,4.632,5.608,5.476,5.184,5.789,5.152,5.618,5.914,4.801,5.293,6.163,5.86,5.323,5.393,5.268,5.119,5.792,5.171,5.408,5.705,5.012,4.891,4.26,5.677,5.079,4.964,5.897,4.729,6.127,5.502,4.889,5.654,5.201,5.493,6.362,6.255,4.598,6.084,5.878,5.287,5.164,5.235,5.729,4.885,6.986,5.23,5.945,5.961,5.273,5.6,5.582,4.847,6.082,4.815,5.156,6.625,5.435,4.777,5.416,6.163,5.491,5.781,5.219,4.714,5.293,5.647,6.182,4.588,5.312,5.407,4.819,5.514,4.948,5.137,5.153,5.657,4.946,5.237,5.332,5.918,6.003,5.012,5.879,5.821,4.834,5.668,5.451,5.732,4.89,4.911,4.897,5.45,5.41,5.417,5.309,5.459,5.219,6.329,5.099,5.37,4.924,6.319,6.027,4.825,5.658,5.512,4.737,5.517,4.995,5.579,5.944,5.209,6.103,5.578,5.262,6.49,4.986,5.011,5.213,5.445,4.82,6.122,5.82,4.796,5.56,5.808,5.612,5.712,5.611,6.103,6.177,5.671,5.309,5.571,4.732,4.765,5.566,5.656,5.475,5.508,5.488,5.669,5.006,4.973,5.116,6.234,4.786,5.2,4.671,5.255,6.419,4.892,5.16,5.64,5.355,4.808,5.143,5.103,5.74,5.391,4.332,4.827,5.491,5.025,4.984,6.573,5.051,5.72,5.066,5.023,5.074,5.825,4.732,5.067,7.002,5.249,5.827,5.231,5.196,4.97,6.149,5.212,5.02,5.862,6.548,4.705,5.546,4.555,5.449,5.247,4.968,5.078,4.433,5.319,5.599,5.094,5.84,5.682,5.969,5.588,5.101,4.872,5.367,6.006,5.629,6.131,5.633,5.09,5.116,5.284,6.33,4.759,5.776,5.293,5.217,5.361,4.759,4.902,5.082,5.385,5.472,5.359,5.835,5.346,6.027,5.624,5.396,5.581,5.434,5.087,5.235,5.084,5.359,5.58,4.432,6.283,5.368,5.314,5.518,5.487,5.172,4.687,5.354,6.114,5.588,5.513,6.473,5.856,6.07,5.198,5.211,4.858,5.941,4.207,5.382,5.504,5.063,5.328,5.888,5.666,4.814,4.671,4.819,5.131,5.312,5.557,5.175,4.866,6.239,4.885,4.637,5.192,5.645,6.385,6.666,5.245,6.038,4.811,5.652,6.039,5.526,5.19,5.72,4.829,5.47,5.294,5.933,5.63,6.246,4.913,5.009,5.183,5.205,6.123,5.128],"y":[4.885,4.392,4.746,5.1,5.358,4.824,4.391,4.611,4.986,5.561,4.862,4.014,5.076,5.007,5.149,4.771,4.85,4.532,5.594,5.658,5.423,5.689,4.633,5.196,4.699,4.828,4.76,4.727,5.933,4.202,6.352,4.18,4.304,5.075,5.0,4.425,4.472,5.415,5.005,5.329,5.487,5.375,4.579,5.309,4.86,4.082,4.364,5.156,4.415,4.886,5.107,4.373,5.172,4.454,4.248,5.297,5.307,3.969,4.834,4.884,4.039,5.372,4.994,4.714,4.902,4.025,4.253,4.637,5.332,4.609,4.622,4.93,4.719,5.315,4.997,5.274,5.18,5.031,3.685,5.323,4.918,4.792,5.684,5.296,4.655,5.466,5.145,5.317,5.3,4.887,4.272,6.162,4.863,4.843,4.608,5.103,4.834,4.211,5.407,5.434,4.795,4.503,5.434,4.303,4.067,5.384,4.608,4.844,5.673,4.274,5.26,4.628,4.59,5.26,5.454,3.861,5.467,5.26,4.666,4.686,4.715,4.729,4.329,6.046,4.585,4.923,4.426,4.688,5.042,4.962,5.169,5.379,5.182,4.927,4.131,4.515,5.395,5.282,5.529,4.685,5.191,4.871,5.1,5.047,4.822,5.321,5.553,5.091,4.819,5.286,4.598,4.168,5.739,5.724,4.839,4.625,5.037,4.974,5.508,5.342,5.521,5.337,5.094,5.391,4.514,4.635,5.022,5.375,4.617,5.348,4.597,4.398,5.344,4.914,5.154,4.492,4.896,4.366,5.111,4.309,4.476,5.039,4.372,5.506,4.7,5.729,5.838,5.595,6.278,5.117,4.894,5.259,5.228,5.696,3.967,5.292,4.728,4.801,4.802,4.783,5.603,4.836,4.828,5.459,5.462,5.205,4.778,4.658,5.544,5.006,5.628,3.831,4.63,4.983,5.505,5.277,5.114,5.408,5.461,5.416,4.588,5.249,4.225,4.419,5.091,4.49,5.241,5.071,4.69,4.804,4.546,4.722,5.198,5.594,4.66,4.94,4.628,4.637,5.755,5.193,4.907,4.965,4.407,4.041,3.707,5.658,4.782,5.129,4.991,3.932,5.971,4.901,4.785,5.746,4.659,5.649,4.886,5.306,5.243,4.966,4.48,5.063,4.675,4.341,4.882,5.435,5.036,4.861,4.588,4.398,4.979,5.203,4.042,3.495,4.64,4.661,5.21,4.791,5.696,4.783,5.05,4.716,5.36,4.536,4.681,4.519,5.031,4.759,4.964,4.066,4.857,5.539,4.094,5.282,6.598,5.87,4.402,4.306,5.809,5.243,5.4,4.206,4.815,4.839,4.315,4.862,4.991,4.812,4.733,4.948,4.787,5.842,3.405,5.151,4.566,3.759,5.454,4.801,6.057,4.727,5.266,4.579,5.22,4.58,5.61,5.006,4.849,4.514,4.143,5.343,5.101,4.83,4.898,4.687,4.773,4.921,4.537,5.925,4.722,5.061,5.434,4.574,4.97,4.292,5.424,4.668,5.237,4.872,5.178,3.77,5.97,5.052,5.052,5.441,6.701,4.482,4.212,4.335,5.022,5.579,4.63,4.8,5.261,5.369,4.744,3.819,5.252,4.655,4.729,5.615,4.694,5.606,5.294,5.523,6.546,5.823,5.24,5.18,5.755,4.826,5.159,4.54,4.007,4.734,4.975,5.066,5.379,4.953,4.508,5.511,5.363,5.282,4.887,5.514,4.668,5.253,4.768,4.532,4.536,4.088,5.395,5.931,3.892,5.576,4.653,4.621,5.027,4.898,5.074,4.324,4.564,5.645,4.223,6.167,4.494,4.365,4.956,4.521,4.85,4.495,4.298,5.164,4.971,5.854,4.303,5.048,4.897,5.553,5.666,5.183,5.391,4.577,5.12,5.45,5.64,4.927,4.495,4.972,5.422,4.974,5.005,4.607,5.274,5.072,5.666,5.032,4.223,5.781,4.416,4.713,3.905,4.823,4.965,5.584,5.126,5.277,4.216,5.292,5.416,5.518,4.846,5.766,5.575,4.589,5.259,3.858,5.124,4.073,4.378,5.2,4.484,4.6,4.698,4.97,5.309,4.126,5.794,5.424,5.58,5.457,4.979,5.046,3.836,5.483,4.994,5.0,4.679,4.922,4.482],"auc":0.7498}</script>
+<script>
+
+"use strict";
+const RAW = JSON.parse(document.getElementById("leafdata").textContent);
+
+/* ---- R-compatible numerics ------------------------------------------ */
+function quantile7(sorted, p){                 // R's quantile(type = 7)
+  const n = sorted.length, h = (n - 1) * p, lo = Math.floor(h), hi = Math.min(lo + 1, n - 1);
+  return sorted[lo] + (h - lo) * (sorted[hi] - sorted[lo]);
+}
+function sdev(a){
+  let m = 0; for (const v of a) m += v; m /= a.length;
+  let s = 0; for (const v of a) s += (v - m) * (v - m);
+  return Math.sqrt(s / (a.length - 1));
+}
+// Abramowitz & Stegun 7.1.26 -- plenty for drawing
+function erf(x){
+  const s = x < 0 ? -1 : 1; x = Math.abs(x);
+  const t = 1 / (1 + 0.3275911 * x);
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t
+                  - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return s * y;
+}
+// gaussian kernel, scaled so that sd = h, as R's density() does
+const GK = {
+  a: h => 5 * h,
+  pdf: (u,h) => Math.exp(-.5*u*u/(h*h)) / (h * 2.5066282746310002),
+  cdf: (u,h) => .5 * (1 + erf(u / (h * Math.SQRT2)))
+};
+// density and kernel-smoothed cdf on a uniform grid, two-pointer sweep.
+// The cdf is smoothed with the same bandwidth as the density -- this is
+// V.SMOOTH = 1 in the R code, i.e. what leafseg.R has always done. Points
+// further than 5h below the grid point contribute exactly 1 to the cdf, so
+// only the window has to be summed.
+function densCdf(sorted, grid, h){
+  const a = GK.a(h), n = sorted.length, m = grid.length;
+  const f = new Float64Array(m), F = new Float64Array(m);
+  let lo = 0, hi = 0;
+  for (let j = 0; j < m; j++){
+    const z = grid[j];
+    while (lo < n && sorted[lo] <  z - a) lo++;
+    while (hi < n && sorted[hi] <= z + a) hi++;
+    let sf = 0, sF = 0;
+    for (let i = lo; i < hi; i++){
+      const u = z - sorted[i];
+      sf += GK.pdf(u, h);
+      sF += GK.cdf(u, h);
+    }
+    f[j] = sf / n;
+    F[j] = (lo + sF) / n;
+  }
+  return {f, F};
+}
+
+/* ---- the leaf, transcribed from leafseg2.R -------------------------- */
+const NL = 512;
+function leafseg(g, o){
+  const X = g.xs, Y = g.ys, nX = X.length, nY = Y.length;
+  const rTAN = Math.tan(o.ang * Math.PI / 180);
+  const h = o.bw;                                   // absolute, both petals
+
+  let lo, hi;
+  if (o.trnc > 0){ lo = quantile7(g.xys, o.trnc); hi = quantile7(g.xys, 1 - o.trnc); }
+  else { lo = g.xys[0] - 0.1 * g.sdXY; hi = g.xys[g.xys.length - 1] + 0.1 * g.sdXY; }
+
+  const z = new Float64Array(NL), step = (hi - lo) / (NL - 1);
+  for (let i = 0; i < NL; i++) z[i] = lo + i * step;
+
+  const dx = densCdf(X, z, h), dy = densCdf(Y, z, h);
+  let mdeX = 0, mdeY = 0;
+  for (let i = 0; i < NL; i++){ if (dx.f[i] > mdeX) mdeX = dx.f[i]; if (dy.f[i] > mdeY) mdeY = dy.f[i]; }
+
+  const vgrid = new Float64Array(NL), stem = new Float64Array(NL);
+  const lam = nX / (nX + nY);
+  const F0 = lam * dx.F[0] + (1 - lam) * dy.F[0];
+  const F1 = lam * dx.F[NL-1] + (1 - lam) * dy.F[NL-1];
+  for (let i = 0; i < NL; i++){
+    const FP = lam * dx.F[i] + (1 - lam) * dy.F[i];
+    vgrid[i] = (FP - F0) / (F1 - F0) * o.H;         // ROC-bent, fixed
+    stem[i]  = (dy.F[i] - dx.F[i]) * o.W;
+  }
+  let area = 0;
+  for (let i = 1; i < NL; i++) area += (vgrid[i] - vgrid[i-1]) * (stem[i] + stem[i-1]) / 2;
+  area /= (o.W * o.H);
+
+  const wX = new Float64Array(NL), wY = new Float64Array(NL);
+  for (let i = 0; i < NL; i++){ wX[i] = dx.f[i] / mdeX * o.W; wY[i] = dy.f[i] / mdeY * o.W; }
+
+  const interp = (arr, v) => {
+    const t = (v - lo) / step;
+    if (t <= 0) return arr[0];
+    if (t >= NL - 1) return arr[NL - 1];
+    const i = t | 0; return arr[i] + (t - i) * (arr[i+1] - arr[i]);
+  };
+  return {z, lo, hi, vgrid, stem, wX, wY, rTAN, areaHalf: area + .5, auc: g.auc,
+          bw: h, nX, nY, W:o.W, H:o.H, veinAng: 90 - o.ang,
+          vf: v => interp(vgrid, v), sf: v => interp(stem, v),
+          wXf: v => interp(wX, v), wYf: v => interp(wY, v)};
+}
+
+function prepGene(d){
+  const xs = Float64Array.from(d.x).sort();
+  const ys = Float64Array.from(d.y).sort();
+  const xys = Float64Array.from([...d.x, ...d.y]).sort();
+  return {name: d.gene, xs, ys, xys, auc: d.auc, sdXY: sdev(xys)};
+}
+const GENE = prepGene(RAW);
+
+/* ---- rendering: the leaf alone, no axes ----------------------------- */
+const COL = { x:"#00CD00", y:"#EEB422", xd:"#0a8f0a", yd:"#a97c11" };
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let CW = 0, CH = 0;
+function resize(){
+  const b = cv.parentElement.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  CW = Math.max(280, b.width); CH = Math.max(280, b.height);
+  cv.width = CW * dpr; cv.height = CH * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function draw(r, o){
+  ctx.clearRect(0, 0, CW, CH);
+  // equal aspect: the tilt of a vein on screen is the tilt in the model
+  // a tilted vein lifts the outline by up to W*tan(ang), so the box has to
+  // reserve that much or the leaf clips. o.headFix pins the reservation to a
+  // fixed angle instead, which keeps the SCALE constant while ang animates.
+  // vgrid and the petal widths do not depend on ang -- ang only enters at
+  // drawing time -- so the exact top the outline reaches at a GIVEN tilt can
+  // be computed once and stays put while ang animates.
+  const pad = 34, xr = o.W * 1.25;
+  const tanUse = (o.headFix !== undefined ? o.headFix : r.rTAN);
+  let top;
+  if (o.boxFix){
+    // Sweeping the BANDWIDTH moves vgrid and the petal widths, so a box taken
+    // from the data would breathe frame to frame. vgrid is renormalised to
+    // [0,H] and the widest petal is exactly W, so H + W*tan(ang) is an exact
+    // upper bound -- use it and the frame is nailed down for the whole sweep.
+    top = o.H + o.W * tanUse;
+  } else {
+    top = 0;
+    for (let i = 0; i < NL; i++){
+      const a = r.vgrid[i] + r.wX[i] * tanUse, b = r.vgrid[i] + r.wY[i] * tanUse;
+      if (a > top) top = a; if (b > top) top = b;
+    }
+  }
+  const yTop = Math.max(o.H, top) + 0.04 * o.H, yBot = -0.04 * o.H;
+  const aW = CW - 2 * pad, aH = CH - 2 * pad - 20;
+  const sc = Math.min(aW / (2 * xr), aH / (yTop - yBot));
+  const cx = pad + aW / 2, cy = pad + aH / 2, midY = (yTop + yBot) / 2;
+  const PX = (x, y) => [cx + x * sc, cy - (y - midY) * sc];
+
+  const veins = (data, sign, col) => {
+    ctx.strokeStyle = col; ctx.lineWidth = .55; ctx.beginPath();
+    for (const v of data){
+      if (v < r.lo || v > r.hi) continue;
+      const b = r.sf(v), hh = r.vf(v), w = sign > 0 ? r.wXf(v) : r.wYf(v);
+      const p1 = PX(b, hh), p2 = PX(b + sign * w, hh + w * r.rTAN);
+      ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]);
+    }
+    ctx.stroke();
+  };
+  veins(GENE.xs,  1, COL.x);
+  veins(GENE.ys, -1, COL.y);
+
+  ctx.strokeStyle = "#101216";
+  for (const [q, dash] of [[.25,[5,4]],[.5,[]],[.75,[5,4]]]){
+    ctx.setLineDash(dash); ctx.lineWidth = 2;
+    for (const [data, sign] of [[GENE.xs, 1], [GENE.ys, -1]]){
+      const v = quantile7(data, q);
+      if (v < r.lo || v > r.hi) continue;
+      const b = r.sf(v), hh = r.vf(v), w = sign > 0 ? r.wXf(v) : r.wYf(v);
+      const p1 = PX(b, hh), p2 = PX(b + sign * w, hh + w * r.rTAN);
+      ctx.beginPath(); ctx.moveTo(p1[0],p1[1]); ctx.lineTo(p2[0],p2[1]); ctx.stroke();
+    }
+  }
+  ctx.setLineDash([]);
+
+  ctx.lineWidth = 2.2; ctx.lineJoin = "round";
+  const contour = sign => { ctx.beginPath();
+    for (let i = 0; i < NL; i++){
+      const w = sign > 0 ? r.wX[i] : r.wY[i];
+      const p = PX(r.stem[i] + sign * w, r.vgrid[i] + w * r.rTAN);
+      i ? ctx.lineTo(p[0],p[1]) : ctx.moveTo(p[0],p[1]); }
+    ctx.stroke(); };
+  contour(1); contour(-1);
+  for (const i of [0, NL-1]){                    // caps follow the chevron
+    const a = PX(r.stem[i] - r.wY[i], r.vgrid[i] + r.wY[i]*r.rTAN);
+    const b = PX(r.stem[i], r.vgrid[i]);
+    const c = PX(r.stem[i] + r.wX[i], r.vgrid[i] + r.wX[i]*r.rTAN);
+    ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.lineTo(c[0],c[1]); ctx.stroke();
+  }
+  ctx.beginPath();
+  for (let i = 0; i < NL; i++){ const p = PX(r.stem[i], r.vgrid[i]); i ? ctx.lineTo(p[0],p[1]) : ctx.moveTo(p[0],p[1]); }
+  ctx.stroke();
+
+  ctx.font = "600 13px -apple-system, Segoe UI, sans-serif"; ctx.textBaseline = "top";
+  ctx.textAlign = "right"; ctx.fillStyle = COL.yd;
+  ctx.fillText("LUSC", PX(-o.W * 0.3, yBot)[0], PX(0, yBot)[1] + 8);
+  ctx.textAlign = "left"; ctx.fillStyle = COL.xd;
+  ctx.fillText("LUAD", PX(o.W * 0.3, yBot)[0], PX(0, yBot)[1] + 8);
+}
+const $ = id => document.getElementById(id);
+const fmt = (v, n) => v.toFixed(n);
+
+
+// boxFix: the frame is computed from H and W alone, so it cannot move while the
+// bandwidth sweeps. headFix pins the tilt allowance to the fixed ang = 10.
+const opts = { bw:0.187, ang:10, W:0.32, H:1, trnc:0,
+               headFix: Math.tan(10 * Math.PI / 180), boxFix: true };
+function render(){
+  draw(leafseg(GENE, opts), opts);
+  $("angv").textContent = opts.bw.toFixed(3);
+}
+$("bw").addEventListener("input", e => {
+  if (playing) toggle();
+  opts.bw = +e.target.value; render();
+});
+
+const LO = 0.03, HI = 0.30;
+let playing = false, t0 = 0, raf = 0;
+const PERIOD = 20000;                       // one full LO -> HI -> LO cycle, deliberately slow
+function toggle(){
+  playing = !playing;
+  $("play").innerHTML = playing ? "&#9632; stop" : "&#9654; play";
+  if (playing){ t0 = performance.now() - PERIOD * phaseOf(opts.bw); loop(); }
+  else cancelAnimationFrame(raf);
+}
+function phaseOf(b){ return ((b - LO) / (HI - LO)) / 2; }
+function loop(){
+  if (!playing) return;
+  const u = ((performance.now() - t0) % PERIOD) / PERIOD;
+  const tri = u < .5 ? u * 2 : 2 - u * 2;            // ping-pong 0 -> 1 -> 0
+  opts.bw = LO + (HI - LO) * tri * tri * (3 - 2 * tri);
+  $("bw").value = opts.bw;
+  render();
+  raf = requestAnimationFrame(loop);
+}
+$("play").addEventListener("click", toggle);
+window.addEventListener("resize", () => { resize(); render(); });
+resize(); render(); toggle();
+</script></body></html>
